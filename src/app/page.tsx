@@ -47,8 +47,8 @@ export default function HonorDAO() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-700 to-indigo-800 flex flex-col items-center justify-center p-4">
-      <h1 className="text-3xl font-bold text-center text-white mb-6">HonorDAO</h1>
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+      <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">HonorDAO</h1>
         <div className="flex mb-6">
           <Button
             variant={activeTab === 'check' ? 'default' : 'outline'}
