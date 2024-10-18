@@ -4,7 +4,14 @@ import { useState } from 'react'
 import { ethers } from 'ethers'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Scroll, Sword } from 'lucide-react'
+import { CheckCircle, Send, ChevronDown, Sword } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 // Mock ABI - replace with your actual smart contract ABI
 const contractABI = [
@@ -17,58 +24,101 @@ const contractABI = [
   }
 ]
 
-export default function MedievalEthereumApp() {
+export default function HonorDAO() {
   const [walletAddress, setWalletAddress] = useState('')
   const [result, setResult] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState('check')
+  const [isSendHonor, setIsSendHonor] = useState<boolean>(false);
+  const [honorType, setHonorType] = useState('')
 
   const handleWalletCheck = async () => {
-    if (!ethers.utils.isAddress(walletAddress)) {
-      setResult('Invalid Ethereum address')
-      return
-    }
-
-    try {
-      // Connect to the Ethereum network (replace with your preferred provider)
-      const provider = new ethers.providers.JsonRpcProvider('https://mainnet.infura.io/v3/YOUR-PROJECT-ID')
-      
-      // Replace with your actual contract address
-      const contractAddress = '0x742d35Cc6634C0532925a3b844Bc454e4438f44e'
-      
-      const contract = new ethers.Contract(contractAddress, contractABI, provider)
-      
-      const isValid = await contract.checkWallet(walletAddress)
-      setResult(isValid ? 'Wallet is valid!' : 'Wallet is not valid.')
-    } catch (error) {
-      console.error('Error checking wallet:', error)
-      setResult('Error checking wallet. Please try again.')
-    }
+    // Placeholder for wallet check functionality
+    setResult(`Honor check for ${walletAddress} completed!`)
   }
 
+  const handleHonorSend = async () => {
+    // Placeholder for honor send functionality
+    setResult(`${honorType} honor sent to ${walletAddress}!`)
+  }
+
+  const handleHonorToggle = () => {
+    setIsSendHonor(!isSendHonor);
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[url('/placeholder.svg?height=1080&width=1920')] bg-cover bg-center">
-      <div className="bg-[#8B4513] p-8 rounded-lg shadow-2xl border-4 border-[#654321] max-w-md w-full space-y-6">
-        <h1 className="text-3xl font-bold text-center text-[#FFD700] font-medieval">Ye Olde Ethereum Checker</h1>
-        <div className="space-y-4">
-          <div className="relative">
-            <Scroll className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#FFD700]" />
-            <Input
-              type="text"
-              placeholder="Enter thy Ethereum address"
-              value={walletAddress}
-              onChange={(e) => setWalletAddress(e.target.value)}
-              className="pl-10 bg-[#D2B48C] border-2 border-[#654321] text-[#4B3621] placeholder-[#8B4513]"
-            />
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-purple-700 to-indigo-800 flex flex-col items-center justify-center p-4">
+      <h1 className="text-3xl font-bold text-center text-white mb-6">HonorDAO</h1>
+      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <div className="flex mb-6">
           <Button
-            onClick={handleWalletCheck}
-            className="w-full bg-[#CD7F32] hover:bg-[#B8860B] text-[#FFD700] border-2 border-[#654321]"
+            variant={activeTab === 'check' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('check')}
+            className="flex-1 rounded-r-none"
           >
-            <Sword className="mr-2" />
-            Verify Thy Wallet
+            Check Honor
+          </Button>
+          <Button
+            variant={activeTab === 'send' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('send')}
+            className="flex-1 rounded-l-none"
+          >
+            Send Honor
+          </Button>
+        </div>
+        <div className="space-y-4">
+          {activeTab == 'check' && (<><Input
+            type="text"
+            placeholder="Ethereum Wallet Address"
+            value={walletAddress}
+            onChange={(e) => setWalletAddress(e.target.value)}
+            className="w-full"
+          /></>)}
+          {activeTab === 'send' && (
+            <Select onValueChange={setHonorType} value={honorType}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select Transaction" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Valor">Valor</SelectItem>
+                <SelectItem value="Wisdom">Wisdom</SelectItem>
+                <SelectItem value="Loyalty">Loyalty</SelectItem>
+                <SelectItem value="Chivalry">Chivalry</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+          { activeTab === 'send' && (
+            <><Button variant={isSendHonor ? 'default' : 'outline'}
+              onClick={handleHonorToggle}
+              className="flex-1 rounded-r-none"
+            >
+              Honor
+            </Button><Button
+              variant={isSendHonor ? 'outline' : 'default'}
+              onClick={handleHonorToggle}
+              className="flex-1 rounded-l-none"
+            >
+                Dishonor
+              </Button></>
+          )} 
+          <Button
+            onClick={activeTab === 'check' ? handleWalletCheck : handleHonorSend}
+            className="w-full"
+          >
+            {activeTab === 'check' ? (
+              <>
+                <Sword className="mr-2 h-6 w-6" />
+                Check Honor
+              </>
+            ) : (
+              <>
+                <Send className="mr-2 h-4 w-4" />
+                Send Honor
+              </>
+            )}
           </Button>
         </div>
         {result && (
-          <div className="mt-4 p-4 bg-[#D2B48C] border-2 border-[#654321] rounded text-center text-[#4B3621]">
+          <div className="mt-6 p-4 bg-gray-100 rounded-md text-center text-gray-800 animate-fade-in">
             {result}
           </div>
         )}
