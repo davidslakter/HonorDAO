@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { ethers } from 'ethers'
+import axios from "axios";
+import * as dotenv from "dotenv";
+import { ethers } from "ethers";
+import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Send, ChevronDown, Sword, Shield } from 'lucide-react'
@@ -26,10 +28,14 @@ const contractABI = [
 
 export default function HonorDAO() {
   const [walletAddress, setWalletAddress] = useState('')
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('check')
   const [isSendHonor, setIsSendHonor] = useState<boolean>(false);
   const [honorType, setHonorType] = useState('')
+
+  dotenv.config();
 
   const handleWalletCheck = async () => {
     // Placeholder for wallet check functionality
@@ -44,6 +50,45 @@ export default function HonorDAO() {
   const handleHonorToggle = () => {
     setIsSendHonor(!isSendHonor);
   };
+
+  // Effect to run a function whenever walletAddress changes
+  useEffect(() => {
+    if (walletAddress) {
+      // Call your function here
+      handleWalletAddressChange(walletAddress);
+    }
+  }, [walletAddress]); // Dependency array includes walletAddress
+
+  // Function to execute when walletAddress is updated
+  const handleWalletAddressChange = (newAddress: string) => {
+    if (activeTab == 'send') {
+      getTransactionHistory();
+    }
+  };
+
+  // Etherscan API key
+  const ETHERSCAN_API_KEY = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY!
+
+// Function to fetch transaction history using Etherscan API
+async function getTransactionHistory() {
+  try {
+    const response = await axios.get(
+      `https://api-sepolia.etherscan.io/api?module=account&action=txlist&address=${walletAddress}&startblock=0&endblock=99999999&page=1&offset=10&sort=asc&apikey=${ETHERSCAN_API_KEY}`
+    );
+
+    const transactions = response.data.result;
+
+    if (response.data.status === "1" && Array.isArray(transactions)) {
+      const successfulTransactions = transactions.filter((tx: any) => tx.isError === "0");
+      setTransactions(successfulTransactions);
+    } else {
+      console.log("Error fetching transaction History")
+    }
+    
+  } catch (error) {
+    console.error("Error fetching transaction history:", error);
+  }
+}
 
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
@@ -67,25 +112,26 @@ export default function HonorDAO() {
           </Button>
         </div>
         <div className="space-y-4">
-          {activeTab == 'check' && (<><Input
+          <Input
             type="text"
             placeholder="ETHEREUM WALLET ADDRESS"
             value={walletAddress}
             onChange={(e) => setWalletAddress(e.target.value)}
-            className="w-full bg-black text-green-500 font-bold placeholder-green-700"
-          /></>)}
+            className="w-full bg-black text-gray-400 font-bold placeholder-green-700"
+          />
           {activeTab === 'send' && (
-            <Select onValueChange={setHonorType} value={honorType}>
+              <Select disabled={transactions.length != 0} onValueChange={setSelectedTransaction} value={selectedTransaction}>
               <SelectTrigger className="w-full bg-black text-gray-400 font-bold placeholder-green-700">
                 <SelectValue placeholder="Select Transaction" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Valor">Valor</SelectItem>
-                <SelectItem value="Wisdom">Wisdom</SelectItem>
-                <SelectItem value="Loyalty">Loyalty</SelectItem>
-                <SelectItem value="Chivalry">Chivalry</SelectItem>
+                {transactions.map((tx) => (
+                  <SelectItem key={tx.hash} value={tx.hash}>
+                    {`From: ${tx.from} | To: ${tx.to} | Value: ${tx.value / 1e18} ETH`}
+                  </SelectItem>
+                ))}
               </SelectContent>
-            </Select>
+              </Select>
           )}
           { activeTab === 'send' && (
             <><Button variant={isSendHonor ? 'default' : 'outline'}

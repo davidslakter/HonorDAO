@@ -27,6 +27,7 @@ yarn-error.log*
 
 # local env files
 .env*.local
+.env
 
 # vercel
 .vercel
@@ -35,3 +36,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 smart_contract/hardhat.config.ts
+/honor_dao_website/.next
