@@ -2,11 +2,12 @@
 
 import axios from "axios";
 import * as dotenv from "dotenv";
-import { ethers } from "ethers";
+import { ethers } from  "ethers";
 import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Send, ChevronDown, Sword, Shield } from 'lucide-react'
+import { Sword, Shield, Bold } from 'lucide-react'
+
 import {
   Select,
   SelectContent,
@@ -14,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { resolve } from "path";
 
 // Mock ABI - replace with your actual smart contract ABI
 const contractABI = [
@@ -30,24 +32,65 @@ export default function HonorDAO() {
   const [walletAddress, setWalletAddress] = useState('')
   const [transactions, setTransactions] = useState<any[]>([]);
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
-  const [result, setResult] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('check')
   const [isSendHonor, setIsSendHonor] = useState<boolean>(false);
-  const [honorType, setHonorType] = useState('')
+  const transactionResults: Array<{ address: string, value: number }> = [];
+  
+  const [showComplete, setComplete] = useState(false);
 
   dotenv.config();
 
+  // Etherscan API key
+  const ETHERSCAN_API_KEY = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY!
+
   const handleWalletCheck = async () => {
     // Placeholder for wallet check functionality
-    setResult(`Honor check for ${walletAddress} completed!`)
+    setComplete(true)
   }
 
+  const good_images = [
+    `/images/good_honor/head-bank.png`,
+    `/images/good_honor/head-crown.png`,
+    `/images/good_honor/head-faberge.png`,
+    `/images/good_honor/head-unicorn.png`,
+    `/images/good_honor/head-wizardhat.png`
+  ];
+
+  const bad_images = [
+    `/images/bad_honor/head-factory-dark.png`,
+    `/images/bad_honor/head-saguaro.png`,
+    `/images/bad_honor/head-skeleton-hat.png`,
+    `/images/bad_honor/head-trashcan.png`,
+    `/images/bad_honor/head-werewolf.png`
+  ];
+
+  const good_quotes = [
+  "True honor is a currency that never devalues.",
+  "Honor is the silent echo of a brave heart.",
+  "In the game of life, honor is the ace up your sleeve.",
+  "The weight of a promise is the measure of one’s honor."
+  ]
+
+  const bad_quotes = [
+  "Those who dance with honor never step on the toes of deceit.",
+  "Dishonor lurks where shortcuts lead.",
+  "The road to dishonor is paved with excuses and half-truths.",
+  "Dishonor is like a bad haircut—you can try to hide it, but it’s still there.",
+  "Dishonor is a pit stop, not the end of the road. You can always choose the next turn."
+  ]
+
+
   const handleHonorSend = async () => {
-    // Placeholder for honor send functionality
-    setResult(`${honorType} honor sent to ${walletAddress}!`)
+    setComplete(true);
+  }
+
+  const changedTab = (tab: String) => {
+    setActiveTab(`${tab}`);
+    setComplete(false);
   }
 
   const handleHonorToggle = () => {
+    setComplete(false);
     setIsSendHonor(!isSendHonor);
   };
 
@@ -66,29 +109,63 @@ export default function HonorDAO() {
     }
   };
 
-  // Etherscan API key
-  const ETHERSCAN_API_KEY = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY!
-
-// Function to fetch transaction history using Etherscan API
-async function getTransactionHistory() {
-  try {
-    const response = await axios.get(
-      `https://api-sepolia.etherscan.io/api?module=account&action=txlist&address=${walletAddress}&startblock=0&endblock=99999999&page=1&offset=10&sort=asc&apikey=${ETHERSCAN_API_KEY}`
-    );
-
-    const transactions = response.data.result;
-
-    if (response.data.status === "1" && Array.isArray(transactions)) {
-      const successfulTransactions = transactions.filter((tx: any) => tx.isError === "0");
-      setTransactions(successfulTransactions);
-    } else {
-      console.log("Error fetching transaction History")
-    }
-    
-  } catch (error) {
-    console.error("Error fetching transaction history:", error);
+  const getRandomStr= (imgArr: Array<string>) => {
+    const randomIndex = Math.floor(Math.random() * imgArr.length);
+    return imgArr[randomIndex];
   }
-}
+
+  async function resolveENS(address: string) {
+    const url = `https://api.etherscan.io/api?module=account&action=ensresolve&address=${address}&apikey=${ETHERSCAN_API_KEY}`;
+    
+    try {
+      const response = await axios.get(url);
+      const data = response.data;
+      console.log(`Looking up ens name for ${address}`)
+      if (data.status === "1") {
+        console.log(`The ENS name for ${address} is: ${data.result}`);
+        return data.result
+      } else {
+        console.log('No ENS name found')
+        return address
+      }
+    } catch (error) {
+      console.error('Error fetching ENS name:', error);
+      return address
+    }
+  }
+
+  // Function to fetch transaction history using Etherscan API
+  async function getTransactionHistory() {
+    try {
+      const response = await axios.get(
+        `https://api-sepolia.etherscan.io/api?module=account&action=txlist&address=${walletAddress}&startblock=0&endblock=99999999&page=1&offset=10&sort=asc&apikey=${ETHERSCAN_API_KEY}`
+      );
+
+      const transactions = response.data.result;
+
+      if (response.data.status === "1" && Array.isArray(transactions)) {
+        const filteredTransactions = transactions.filter((tx: any) => tx.isError === "0" && tx.to != walletAddress.toLowerCase());
+        console.log(filteredTransactions)
+        // Initialize an empty array to store transaction results
+      const transactionResults = [];
+
+      for (const tx of filteredTransactions) {
+        const address = await resolveENS(tx.to);
+        const value = tx.value;
+        
+        // Push the result into the transactionResults array
+        transactionResults.push({ address: address, value: value });
+      }
+      // Now update the state with the transaction results
+      setTransactions(transactionResults);
+      } else {
+        console.log("Error fetching transaction History")
+      }
+      
+    } catch (error) {
+      console.error("Error fetching transaction history:", error);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
@@ -98,14 +175,14 @@ async function getTransactionHistory() {
         <div className="flex mb-6">
           <Button
             variant={activeTab === 'check' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('check')}
+            onClick={() => changedTab('check')}
             className="flex-1 rounded-r-none"
           >
             Check Honor
           </Button>
           <Button
             variant={activeTab === 'send' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('send')}
+            onClick={() => changedTab('send')}
             className="flex-1 rounded-l-none"
           >
             Send Honor
@@ -120,18 +197,18 @@ async function getTransactionHistory() {
             className="w-full bg-black text-gray-400 font-bold placeholder-green-700"
           />
           {activeTab === 'send' && (
-              <Select disabled={transactions.length != 0} onValueChange={setSelectedTransaction} value={selectedTransaction}>
+              <Select disabled={transactions.length === 0} onValueChange={setSelectedTransaction} value={selectedTransaction}>
               <SelectTrigger className="w-full bg-black text-gray-400 font-bold placeholder-green-700">
                 <SelectValue placeholder="Select Transaction" />
               </SelectTrigger>
               <SelectContent>
                 {transactions.map((tx) => (
-                  <SelectItem key={tx.hash} value={tx.hash}>
-                    {`From: ${tx.from} | To: ${tx.to} | Value: ${tx.value / 1e18} ETH`}
+                  <SelectItem key={tx.address} value={tx.value.toString()}>
+                    {`${tx.address} | Value: ${tx.value / 1e18} ETH`}
                   </SelectItem>
                 ))}
               </SelectContent>
-              </Select>
+            </Select>
           )}
           { activeTab === 'send' && (
             <><Button variant={isSendHonor ? 'default' : 'outline'}
@@ -164,10 +241,52 @@ async function getTransactionHistory() {
             )}
           </Button>
         </div>
-        {result && (
-          <div className="mt-6 p-4 bg-gray-100 rounded-md text-center text-gray-800 animate-fade-in">
-            {result}
-          </div>
+        {showComplete && (
+          <div className="mt-4 text-center">
+
+          {isSendHonor ? (
+            <>
+              {activeTab == 'check' ? (
+                <>
+                  <p className="text-white text-lg">This address has Honor!</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-white text-lg">Honor Report Sent!</p>
+                </>
+              )}
+              <img src={getRandomStr(good_images)} alt="Honor Sent" className="w-32 h-32 mx-auto" />
+              <p className="text-white text-lg">"{getRandomStr(good_quotes)}"</p>
+            </>
+          ) : (
+            <>
+              {activeTab == 'check' ? (
+                <>
+                  <p className="text-white text-lg">This address has 5 Dishonor and 10 Honor</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-white text-lg">Honor Report Sent!</p>
+                </>
+              )}
+              <img src={getRandomStr(bad_images)} alt="Dishonor Sent" className="w-32 h-32 mx-auto" />
+              <p className="text-white text-lg">"{getRandomStr(bad_quotes)}"</p>
+            </>
+          )}
+
+          {activeTab == 'check' ? (
+            <>
+            </>
+          ) : (
+            <>
+            <br></br>
+              <p className="text-white text-lg font-bold">Thank You For Reporting!</p>
+            </>
+          )}
+
+        </div>
+        
+
         )}
       </div>
       <style jsx global>{`
