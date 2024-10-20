@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
-import "./Soulbound.sol"; // Import the soulbound token contracts
+import "./Soulbound.sol";
 
 contract HonorDAO {
     SoulboundToken public honorToken;

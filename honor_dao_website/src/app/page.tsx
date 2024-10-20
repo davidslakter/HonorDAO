@@ -248,7 +248,7 @@ export default function HonorDAO() {
             <>
               {activeTab == 'check' ? (
                 <>
-                  <p className="text-white text-lg">This address has Honor!</p>
+                  <p className="text-white text-lg">This address has 5 Dishonor and 10 Honor</p>
                 </>
               ) : (
                 <>
