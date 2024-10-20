@@ -346,7 +346,7 @@ export default function HonorDAO() {
               <Select 
               disabled={transactions.length === 0} 
               onValueChange={(value) => setSelectedTransaction(value)} 
-              value={selectedTransaction}
+              value={selectedTransaction!}
             >
               <SelectTrigger className="w-full bg-black text-gray-400 font-bold placeholder-green-700">
                 <SelectValue placeholder="Select Transaction" />
